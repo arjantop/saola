@@ -49,6 +49,36 @@ func GetParams(ctx context.Context) Params {
 	return EmptyParams()
 }
 
+type ServiceFilter interface {
+	Do(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService)
+}
+
+type FuncFilter func(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService)
+
+func (f FuncFilter) Do(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService) {
+	f(ctx, w, r, s)
+}
+
+func Chain(filter ServiceFilter, filters ...ServiceFilter) ServiceFilter {
+	if len(filters) == 0 {
+		return filter
+	} else {
+		return FuncFilter(func(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService) {
+			filter.Do(ctx, w, r, Apply(s, Chain(filters[0], filters[1:]...)))
+		})
+	}
+}
+
+func Apply(s HttpService, filters ...ServiceFilter) HttpService {
+	if len(filters) == 0 {
+		return s
+	} else {
+		return FuncService(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			filters[0].Do(ctx, w, r, Apply(s, filters[1:]...))
+		})
+	}
+}
+
 type HttpService interface {
 	Do(ctx context.Context, w http.ResponseWriter, r *http.Request)
 }
