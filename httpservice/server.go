@@ -113,6 +113,13 @@ func (e *Endpoint) POST(path string, s HttpService) {
 	})
 }
 
+func (e *Endpoint) PUT(path string, s HttpService) {
+	e.router.PUT(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		ctx := WithParams(context.Background(), Params{p})
+		s.Do(ctx, w, r)
+	})
+}
+
 func (e *Endpoint) Do(_ context.Context, w http.ResponseWriter, r *http.Request) {
 	e.router.ServeHTTP(w, r)
 }

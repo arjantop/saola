@@ -69,6 +69,24 @@ func TestServerEndpointPOST(t *testing.T) {
 	assert.Equal(t, "lucian", w.Body.String())
 }
 
+func TestServerEndpointPUT(t *testing.T) {
+	endpoint := httpservice.NewEndpoint()
+	endpoint.POST("/hello/:name", nil)
+	endpoint.PUT("/hello/:name", httpservice.FuncService(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		params := httpservice.GetParams(ctx)
+		fmt.Fprintf(w, params.Get("name"))
+	}))
+
+	req, err := http.NewRequest("PUT", "http://example.com/hello/john", nil)
+	assert.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	endpoint.Do(context.Background(), w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "john", w.Body.String())
+}
+
 func NewService() httpservice.HttpService {
 	return httpservice.FuncService(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "service")
