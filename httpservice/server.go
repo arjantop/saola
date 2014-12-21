@@ -5,8 +5,30 @@ import (
 
 	"code.google.com/p/go.net/context"
 
+	"github.com/arjantop/saola"
 	"github.com/julienschmidt/httprouter"
 )
+
+type key int
+
+const httpRequest key = 0
+
+type HttpRequest struct {
+	Writer  http.ResponseWriter
+	Request *http.Request
+}
+
+func WithHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
+	return context.WithValue(ctx, httpRequest, &HttpRequest{w, r})
+}
+
+func GetHttpRequest(ctx context.Context) *HttpRequest {
+	r, ok := ctx.Value(httpRequest).(*HttpRequest)
+	if !ok {
+		panic("missing http request in context")
+	}
+	return r
+}
 
 type Params struct {
 	params httprouter.Params
@@ -34,9 +56,7 @@ func (p *Params) Set(key, value string) {
 	})
 }
 
-type key int
-
-const paramsKey key = 0
+const paramsKey key = 1
 
 func WithParams(ctx context.Context, p Params) context.Context {
 	return context.WithValue(ctx, paramsKey, p)
@@ -49,44 +69,20 @@ func GetParams(ctx context.Context) Params {
 	return EmptyParams()
 }
 
-type ServiceFilter interface {
-	Do(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService)
-}
-
-type FuncFilter func(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService)
-
-func (f FuncFilter) Do(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService) {
-	f(ctx, w, r, s)
-}
-
-func Chain(filter ServiceFilter, filters ...ServiceFilter) ServiceFilter {
-	if len(filters) == 0 {
-		return filter
-	} else {
-		return FuncFilter(func(ctx context.Context, w http.ResponseWriter, r *http.Request, s HttpService) {
-			filter.Do(ctx, w, r, Apply(s, Chain(filters[0], filters[1:]...)))
-		})
-	}
-}
-
-func Apply(s HttpService, filters ...ServiceFilter) HttpService {
-	if len(filters) == 0 {
-		return s
-	} else {
-		return FuncService(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			filters[0].Do(ctx, w, r, Apply(s, filters[1:]...))
-		})
-	}
-}
-
 type HttpService interface {
-	Do(ctx context.Context, w http.ResponseWriter, r *http.Request)
+	DoHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) error
+	saola.Service
 }
 
-type FuncService func(ctx context.Context, w http.ResponseWriter, r *http.Request)
+type FuncService func(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 
-func (f FuncService) Do(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
+func (f FuncService) DoHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	return f(ctx, w, r)
+}
+
+func (f FuncService) Do(ctx context.Context) error {
+	r := GetHttpRequest(ctx)
+	return f.DoHTTP(ctx, r.Writer, r.Request)
 }
 
 type Endpoint struct {
@@ -99,33 +95,40 @@ func NewEndpoint() *Endpoint {
 	}
 }
 
-func (e *Endpoint) GET(path string, s HttpService) {
+func (e *Endpoint) GET(path string, s saola.Service) {
 	e.router.GET(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(context.Background(), Params{p})
-		s.Do(ctx, w, r)
+		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		s.Do(ctx)
 	})
 }
 
-func (e *Endpoint) POST(path string, s HttpService) {
+func (e *Endpoint) POST(path string, s saola.Service) {
 	e.router.POST(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(context.Background(), Params{p})
-		s.Do(ctx, w, r)
+		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		s.Do(ctx)
 	})
 }
 
-func (e *Endpoint) PUT(path string, s HttpService) {
+func (e *Endpoint) PUT(path string, s saola.Service) {
 	e.router.PUT(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(context.Background(), Params{p})
-		s.Do(ctx, w, r)
+		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		s.Do(ctx)
 	})
 }
 
-func (e *Endpoint) Do(_ context.Context, w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) DoHTTP(_ context.Context, w http.ResponseWriter, r *http.Request) error {
 	e.router.ServeHTTP(w, r)
+	return nil
 }
 
-func Serve(addr string, s HttpService) error {
+func (e *Endpoint) Do(ctx context.Context) error {
+	r := GetHttpRequest(ctx)
+	return e.DoHTTP(ctx, r.Writer, r.Request)
+}
+
+func Serve(addr string, s saola.Service) error {
 	return http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.Do(context.Background(), w, r)
+		ctx := WithHttpRequest(context.Background(), w, r)
+		s.Do(ctx)
 	}))
 }
