@@ -1,6 +1,7 @@
 package httpservice
 
 import (
+	"log"
 	"net/http"
 
 	"code.google.com/p/go.net/context"
@@ -90,6 +91,7 @@ type Endpoint struct {
 }
 
 func NewEndpoint() *Endpoint {
+	log.Println("")
 	return &Endpoint{
 		router: httprouter.New(),
 	}
@@ -122,8 +124,7 @@ func (e *Endpoint) DoHTTP(_ context.Context, w http.ResponseWriter, r *http.Requ
 }
 
 func (e *Endpoint) Do(ctx context.Context) error {
-	r := GetHttpRequest(ctx)
-	return e.DoHTTP(ctx, r.Writer, r.Request)
+	return Do(e, ctx)
 }
 
 func Serve(addr string, s saola.Service) error {
@@ -131,4 +132,9 @@ func Serve(addr string, s saola.Service) error {
 		ctx := WithHttpRequest(context.Background(), w, r)
 		s.Do(ctx)
 	}))
+}
+
+func Do(s HttpService, ctx context.Context) error {
+	r := GetHttpRequest(ctx)
+	return s.DoHTTP(ctx, r.Writer, r.Request)
 }
