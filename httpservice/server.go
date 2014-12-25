@@ -129,7 +129,7 @@ func (e *Endpoint) Do(ctx context.Context) error {
 
 func Serve(addr string, s saola.Service) error {
 	return http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := WithHttpRequest(context.Background(), w, r)
+		ctx := WithHttpRequest(context.Background(), NewResponseWriter(w), r)
 		s.Do(ctx)
 	}))
 }
