@@ -16,8 +16,11 @@ func Chain(f Filter, fs ...Filter) Filter {
 	if len(fs) == 0 {
 		return f
 	} else {
+		chained := Chain(fs[0], fs[1:]...)
 		return FuncFilter(func(ctx context.Context, s Service) error {
-			return f.Do(ctx, Apply(s, Chain(fs[0], fs[1:]...)))
+			return f.Do(ctx, FuncService(func(ctx context.Context) error {
+				return chained.Do(ctx, s)
+			}))
 		})
 	}
 }
@@ -36,8 +39,16 @@ func Apply(s Service, fs ...Filter) Service {
 	if len(fs) == 0 {
 		return s
 	} else {
+		f := fs[0]
+		s := Apply(s, fs[1:]...)
 		return FuncService(func(ctx context.Context) error {
-			return fs[0].Do(ctx, Apply(s, fs[1:]...))
+			return f.Do(ctx, s)
 		})
 	}
+}
+
+type NoopService struct{}
+
+func (s NoopService) Do(ctx context.Context) error {
+	return nil
 }

@@ -81,3 +81,58 @@ func TestServerFilterApplyMultiple(t *testing.T) {
 		return saola.Apply(s, filterA, filterB, filterC).Do(ctx)
 	}, "A-B-C-service-C-B-A")
 }
+
+func NewBenchFilter() saola.Filter {
+	return saola.FuncFilter(func(ctx context.Context, s saola.Service) error {
+		return s.Do(ctx)
+	})
+}
+
+func BenchmarkService(b *testing.B) {
+	ctx := context.Background()
+	s := saola.NoopService{}
+	for i := 0; i < b.N; i++ {
+		s.Do(ctx)
+	}
+}
+
+func BenchmarkFuncService(b *testing.B) {
+	ctx := context.Background()
+	s := saola.FuncService(func(ctx context.Context) error { return nil })
+	for i := 0; i < b.N; i++ {
+		s.Do(ctx)
+	}
+}
+
+func BenchmarkFilter(b *testing.B) {
+	ctx := context.Background()
+	s := saola.Apply(saola.NoopService{}, NewBenchFilter())
+	for i := 0; i < b.N; i++ {
+		s.Do(ctx)
+	}
+}
+
+func BenchmarkFilterNoApply(b *testing.B) {
+	ctx := context.Background()
+	s := saola.NoopService{}
+	f := NewBenchFilter()
+	for i := 0; i < b.N; i++ {
+		f.Do(ctx, s)
+	}
+}
+
+func BenchmarkFilterMultipleApply(b *testing.B) {
+	ctx := context.Background()
+	s := saola.Apply(saola.NoopService{}, NewBenchFilter(), NewBenchFilter(), NewBenchFilter())
+	for i := 0; i < b.N; i++ {
+		s.Do(ctx)
+	}
+}
+
+func BenchmarkFilterMultipleChain(b *testing.B) {
+	ctx := context.Background()
+	s := saola.Apply(saola.NoopService{}, saola.Chain(NewBenchFilter(), NewBenchFilter(), NewBenchFilter()))
+	for i := 0; i < b.N; i++ {
+		s.Do(ctx)
+	}
+}
