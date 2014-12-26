@@ -8,8 +8,7 @@ import (
 
 	"github.com/arjantop/saola/httpservice"
 	"github.com/stretchr/testify/assert"
-
-	"code.google.com/p/go.net/context"
+	"golang.org/x/net/context"
 )
 
 func TestServerParamsInContext(t *testing.T) {

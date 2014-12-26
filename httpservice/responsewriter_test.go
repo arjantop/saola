@@ -59,7 +59,15 @@ func TestResponseWriterWrite(t *testing.T) {
 	assert.Equal(t, "hello", r.Body.String())
 }
 
-type ClosableResponseWriter struct{}
+type ClosableResponseWriter struct {
+	c chan bool
+}
+
+func NewClosableResponseWriter() ClosableResponseWriter {
+	return ClosableResponseWriter{
+		c: make(chan bool),
+	}
+}
 
 func (w ClosableResponseWriter) Write(b []byte) (int, error) {
 	return 0, nil
@@ -72,13 +80,17 @@ func (w ClosableResponseWriter) Header() http.Header {
 func (w ClosableResponseWriter) WriteHeader(code int) {}
 
 func (w ClosableResponseWriter) CloseNotify() <-chan bool {
-	c := make(chan bool)
-	go func() { c <- true }()
-	return c
+	return w.c
+}
+
+func (w ClosableResponseWriter) Close() {
+	w.c <- true
 }
 
 func TestResponseWriterCloseNotify(t *testing.T) {
-	w := httpservice.NewResponseWriter(ClosableResponseWriter{})
+	cw := NewClosableResponseWriter()
+	w := httpservice.NewResponseWriter(cw)
+	go func() { cw.Close() }()
 	select {
 	case c := <-w.CloseNotify():
 		assert.True(t, c)

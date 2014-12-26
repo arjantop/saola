@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"code.google.com/p/go.net/context"
 	"github.com/arjantop/saola"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 func WithString(ctx context.Context) context.Context {

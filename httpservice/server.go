@@ -1,13 +1,11 @@
 package httpservice
 
 import (
-	"log"
 	"net/http"
-
-	"code.google.com/p/go.net/context"
 
 	"github.com/arjantop/saola"
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/net/context"
 )
 
 type key int
@@ -91,7 +89,6 @@ type Endpoint struct {
 }
 
 func NewEndpoint() *Endpoint {
-	log.Println("")
 	return &Endpoint{
 		router: httprouter.New(),
 	}
@@ -99,21 +96,27 @@ func NewEndpoint() *Endpoint {
 
 func (e *Endpoint) GET(path string, s saola.Service) {
 	e.router.GET(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		cctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
 
 func (e *Endpoint) POST(path string, s saola.Service) {
 	e.router.POST(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		cctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
 
 func (e *Endpoint) PUT(path string, s saola.Service) {
 	e.router.PUT(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		ctx := WithParams(WithHttpRequest(context.Background(), w, r), Params{p})
+		cctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
@@ -129,7 +132,9 @@ func (e *Endpoint) Do(ctx context.Context) error {
 
 func Serve(addr string, s saola.Service) error {
 	return http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := WithHttpRequest(context.Background(), NewResponseWriter(w), r)
+		cctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		ctx := WithHttpRequest(cctx, NewResponseWriter(w), r)
 		s.Do(ctx)
 	}))
 }

@@ -1,6 +1,6 @@
 package saola
 
-import "code.google.com/p/go.net/context"
+import "golang.org/x/net/context"
 
 type Filter interface {
 	Do(ctx context.Context, s Service) error
