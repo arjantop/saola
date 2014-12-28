@@ -28,11 +28,11 @@ func (r *StatsRecorder) TimerValue(name string) time.Duration {
 }
 
 func (r *StatsRecorder) Counter(name string) stats.Counter {
-	return counter{scopedName(r.scope, name), r.counters}
+	return counter{stats.ScopedName(r.scope, name), r.counters}
 }
 
 func (r *StatsRecorder) Timer(name string) stats.Timer {
-	return timer{scopedName(r.scope, name), r.timers}
+	return timer{stats.ScopedName(r.scope, name), r.timers}
 }
 
 func (r *StatsRecorder) Scope(scope string) stats.StatsReceiver {
@@ -41,13 +41,6 @@ func (r *StatsRecorder) Scope(scope string) stats.StatsReceiver {
 		counters: r.counters,
 		timers:   r.timers,
 	}
-}
-
-func scopedName(scope, name string) string {
-	if len(scope) != 0 {
-		return scope + "." + name
-	}
-	return name
 }
 
 type counter struct {

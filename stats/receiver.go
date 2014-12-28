@@ -16,3 +16,10 @@ type Counter interface {
 type Timer interface {
 	Add(time.Duration)
 }
+
+func ScopedName(scope, name string) string {
+	if len(scope) != 0 {
+		return scope + "." + name
+	}
+	return name
+}
