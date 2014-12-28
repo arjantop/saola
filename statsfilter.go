@@ -8,14 +8,16 @@ import (
 )
 
 func NewStatsFilter(stats stats.StatsReceiver) Filter {
-	requestsStat := stats.Counter("requests")
-	successStat := stats.Counter("success")
-	failureStat := stats.Counter("failure")
-	latencyStat := stats.Timer("latency")
 	return FuncFilter(func(ctx context.Context, s Service) error {
 		start := time.Now()
 		err := s.Do(ctx)
 		latency := time.Now().Sub(start)
+
+		serviceStats := stats.Scope(s.Name())
+		requestsStat := serviceStats.Counter("requests")
+		successStat := serviceStats.Counter("success")
+		failureStat := serviceStats.Counter("failure")
+		latencyStat := serviceStats.Timer("latency")
 
 		requestsStat.Incr()
 		latencyStat.Add(latency)

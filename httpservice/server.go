@@ -84,6 +84,10 @@ func (f FuncService) Do(ctx context.Context) error {
 	return f.DoHTTP(ctx, r.Writer, r.Request)
 }
 
+func (f FuncService) Name() string {
+	return "httpfunc"
+}
+
 type Endpoint struct {
 	router *httprouter.Router
 }
@@ -128,6 +132,10 @@ func (e *Endpoint) DoHTTP(_ context.Context, w http.ResponseWriter, r *http.Requ
 
 func (e *Endpoint) Do(ctx context.Context) error {
 	return Do(e, ctx)
+}
+
+func (e *Endpoint) Name() string {
+	return "httpendpoint"
 }
 
 func Serve(addr string, s saola.Service) error {

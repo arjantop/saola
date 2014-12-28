@@ -37,7 +37,7 @@ func (r *StatsRecorder) Timer(name string) stats.Timer {
 
 func (r *StatsRecorder) Scope(scope string) stats.StatsReceiver {
 	return &StatsRecorder{
-		scope:    scope,
+		scope:    stats.ScopedName(r.scope, scope),
 		counters: r.counters,
 		timers:   r.timers,
 	}

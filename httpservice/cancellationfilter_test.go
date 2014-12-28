@@ -20,6 +20,10 @@ func (s SleepService) Do(ctx context.Context) error {
 	}
 }
 
+func (s SleepService) Name() string {
+	return "sleep"
+}
+
 func TestCancellationFilter_RequestInCancelled(t *testing.T) {
 	w := NewClosableResponseWriter()
 	ctx := httpservice.WithHttpRequest(context.Background(), w, nil)

@@ -25,10 +25,10 @@ func TestResponseStatsFilter(t *testing.T) {
 		return nil
 	}))
 	assert.NoError(t, err)
-	assert.Equal(t, 1, r.CounterValue("http.status.200"))
-	assert.Equal(t, 1, r.CounterValue("http.status.2xx"))
-	assert.True(t, r.TimerValue("http.time.200") > 0)
-	assert.True(t, r.TimerValue("http.time.2xx") > 0)
+	assert.Equal(t, 1, r.CounterValue("func.http.status.200"))
+	assert.Equal(t, 1, r.CounterValue("func.http.status.2xx"))
+	assert.True(t, r.TimerValue("func.http.time.200") > 0)
+	assert.True(t, r.TimerValue("func.http.time.2xx") > 0)
 
 	err1 := f.Do(newContext("GET"), saola.FuncService(func(ctx context.Context) error {
 		r := httpservice.GetHttpRequest(ctx)
@@ -43,16 +43,16 @@ func TestResponseStatsFilter(t *testing.T) {
 	}))
 
 	assert.Error(t, err1)
-	assert.Equal(t, 1, r.CounterValue("http.status.500"))
-	assert.Equal(t, 1, r.CounterValue("http.status.5xx"))
-	assert.True(t, r.TimerValue("http.time.500") > 0)
-	assert.True(t, r.TimerValue("http.time.5xx") > 0)
+	assert.Equal(t, 1, r.CounterValue("func.http.status.500"))
+	assert.Equal(t, 1, r.CounterValue("func.http.status.5xx"))
+	assert.True(t, r.TimerValue("func.http.time.500") > 0)
+	assert.True(t, r.TimerValue("func.http.time.5xx") > 0)
 
 	assert.Error(t, err2)
-	assert.Equal(t, 1, r.CounterValue("http.status.404"))
-	assert.Equal(t, 1, r.CounterValue("http.status.4xx"))
-	assert.True(t, r.TimerValue("http.time.404") > 0)
-	assert.True(t, r.TimerValue("http.time.4xx") > 0)
+	assert.Equal(t, 1, r.CounterValue("func.http.status.404"))
+	assert.Equal(t, 1, r.CounterValue("func.http.status.4xx"))
+	assert.True(t, r.TimerValue("func.http.time.404") > 0)
+	assert.True(t, r.TimerValue("func.http.time.4xx") > 0)
 }
 
 func BenchmarkResponseStatsFilter(b *testing.B) {

@@ -24,11 +24,21 @@ func GetString(ctx context.Context) string {
 	return *state
 }
 
+type namedService struct {
+	name string
+}
+
+func (s namedService) Do(ctx context.Context) error {
+	WriteString(ctx, "service")
+	return nil
+}
+
+func (s namedService) Name() string {
+	return s.name
+}
+
 func NewService() saola.Service {
-	return saola.FuncService(func(ctx context.Context) error {
-		WriteString(ctx, "service")
-		return nil
-	})
+	return namedService{"servicename"}
 }
 
 func NewFilter(name string) saola.Filter {
@@ -80,6 +90,11 @@ func TestServerFilterApplyMultiple(t *testing.T) {
 		filterC := NewFilter("C")
 		return saola.Apply(s, filterA, filterB, filterC).Do(ctx)
 	}, "A-B-C-service-C-B-A")
+}
+
+func TestServerFilterApplyServiceName(t *testing.T) {
+	s := saola.Apply(namedService{"servicename"}, NewFilter("A"))
+	assert.Equal(t, "servicename", s.Name())
 }
 
 func NewBenchFilter() saola.Filter {

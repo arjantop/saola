@@ -67,3 +67,15 @@ func TestStatsRecorderScope(t *testing.T) {
 	t1.Add(time.Second)
 	assert.Equal(t, time.Second, r.TimerValue("a.b"))
 }
+
+func TestStatsRecorderNestedScope(t *testing.T) {
+	r := statstest.NewRecorder()
+	s1 := r.Scope("a").Scope("b")
+	c1 := s1.Counter("c")
+	c1.Incr()
+	assert.Equal(t, 1, r.CounterValue("a.b.c"))
+
+	t1 := s1.Timer("c")
+	t1.Add(time.Second)
+	assert.Equal(t, time.Second, r.TimerValue("a.b.c"))
+}
