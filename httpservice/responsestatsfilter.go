@@ -15,7 +15,7 @@ func NewResponseStatsFilter(stats stats.StatsReceiver) saola.Filter {
 		err := s.Do(ctx)
 		latency := time.Now().Sub(start)
 
-		req := GetHttpRequest(ctx)
+		req := GetServerRequest(ctx)
 
 		serviceStats := stats.Scope(s.Name())
 		statusStats := serviceStats.Scope("http.status")

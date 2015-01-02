@@ -13,7 +13,7 @@ import (
 func TestRequestLogFilter(t *testing.T) {
 	w, _ := newTestingResponseWriter()
 	req, _ := http.NewRequest("PUT", "http://localhost:8080/foo", nil)
-	ctx := httpservice.WithHttpRequest(context.Background(), w, req)
+	ctx := httpservice.WithServerRequest(context.Background(), w, req)
 	var logEntry httpservice.LogEntry
 	s := saola.Apply(saola.NoopService{}, httpservice.NewRequestLogFilter(func(e httpservice.LogEntry) {
 		logEntry = e
@@ -27,7 +27,7 @@ func TestRequestLogFilter(t *testing.T) {
 
 func TestRequestLogFilterNoStatusCodeInterceptor(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://localhost:8080/bar", nil)
-	ctx := httpservice.WithHttpRequest(context.Background(), NoopResponseWriter{}, req)
+	ctx := httpservice.WithServerRequest(context.Background(), NoopResponseWriter{}, req)
 	var logEntry httpservice.LogEntry
 	s := saola.Apply(saola.NoopService{}, httpservice.NewRequestLogFilter(func(e httpservice.LogEntry) {
 		logEntry = e
@@ -38,7 +38,7 @@ func TestRequestLogFilterNoStatusCodeInterceptor(t *testing.T) {
 
 func BenchmarkRequestLog(b *testing.B) {
 	req, _ := http.NewRequest("POST", "http://localhost:8080/foo", nil)
-	ctx := httpservice.WithHttpRequest(context.Background(), NoopResponseWriter{}, req)
+	ctx := httpservice.WithServerRequest(context.Background(), NoopResponseWriter{}, req)
 	s := saola.Apply(saola.NoopService{}, httpservice.NewRequestLogFilter(func(e httpservice.LogEntry) {}))
 	for i := 0; i < b.N; i++ {
 		s.Do(ctx)

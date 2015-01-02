@@ -26,7 +26,7 @@ func (s SleepService) Name() string {
 
 func TestCancellationFilter_RequestInCancelled(t *testing.T) {
 	w := NewClosableResponseWriter()
-	ctx := httpservice.WithHttpRequest(context.Background(), w, nil)
+	ctx := httpservice.WithServerRequest(context.Background(), w, nil)
 	go func() { w.Close() }()
 	err := httpservice.NewCancellationFilter().Do(ctx, SleepService{})
 	assert.Equal(t, context.Canceled, err)

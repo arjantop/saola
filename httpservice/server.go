@@ -12,17 +12,17 @@ type key int
 
 const httpRequest key = 0
 
-type HttpRequest struct {
+type ServerRequest struct {
 	Writer  http.ResponseWriter
 	Request *http.Request
 }
 
-func WithHttpRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
-	return context.WithValue(ctx, httpRequest, &HttpRequest{w, r})
+func WithServerRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
+	return context.WithValue(ctx, httpRequest, &ServerRequest{w, r})
 }
 
-func GetHttpRequest(ctx context.Context) *HttpRequest {
-	r, ok := ctx.Value(httpRequest).(*HttpRequest)
+func GetServerRequest(ctx context.Context) *ServerRequest {
+	r, ok := ctx.Value(httpRequest).(*ServerRequest)
 	if !ok {
 		panic("missing http request in context")
 	}
@@ -80,7 +80,7 @@ func (f FuncService) DoHTTP(ctx context.Context, w http.ResponseWriter, r *http.
 }
 
 func (f FuncService) Do(ctx context.Context) error {
-	r := GetHttpRequest(ctx)
+	r := GetServerRequest(ctx)
 	return f.DoHTTP(ctx, r.Writer, r.Request)
 }
 
@@ -102,7 +102,7 @@ func (e *Endpoint) GET(path string, s saola.Service) {
 	e.router.GET(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		cctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
+		ctx := WithParams(WithServerRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
@@ -111,7 +111,7 @@ func (e *Endpoint) POST(path string, s saola.Service) {
 	e.router.POST(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		cctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
+		ctx := WithParams(WithServerRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
@@ -120,7 +120,7 @@ func (e *Endpoint) PUT(path string, s saola.Service) {
 	e.router.PUT(path, func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		cctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ctx := WithParams(WithHttpRequest(cctx, w, r), Params{p})
+		ctx := WithParams(WithServerRequest(cctx, w, r), Params{p})
 		s.Do(ctx)
 	})
 }
@@ -142,12 +142,12 @@ func Serve(addr string, s saola.Service) error {
 	return http.ListenAndServe(addr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ctx := WithHttpRequest(cctx, NewResponseWriter(w), r)
+		ctx := WithServerRequest(cctx, NewResponseWriter(w), r)
 		s.Do(ctx)
 	}))
 }
 
 func Do(s HttpService, ctx context.Context) error {
-	r := GetHttpRequest(ctx)
+	r := GetServerRequest(ctx)
 	return s.DoHTTP(ctx, r.Writer, r.Request)
 }

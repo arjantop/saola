@@ -15,7 +15,7 @@ import (
 func newContext(method string) context.Context {
 	w, _ := newTestingResponseWriter()
 	req, _ := http.NewRequest(method, "http://localhost:8080/foo", nil)
-	return httpservice.WithHttpRequest(context.Background(), w, req)
+	return httpservice.WithServerRequest(context.Background(), w, req)
 }
 
 func TestResponseStatsFilter(t *testing.T) {
@@ -31,13 +31,13 @@ func TestResponseStatsFilter(t *testing.T) {
 	assert.True(t, r.TimerValue("func.http.time.2xx") > 0)
 
 	err1 := f.Do(newContext("GET"), saola.FuncService(func(ctx context.Context) error {
-		r := httpservice.GetHttpRequest(ctx)
+		r := httpservice.GetServerRequest(ctx)
 		r.Writer.WriteHeader(http.StatusInternalServerError)
 		return errors.New("error")
 	}))
 
 	err2 := f.Do(newContext("GET"), saola.FuncService(func(ctx context.Context) error {
-		r := httpservice.GetHttpRequest(ctx)
+		r := httpservice.GetServerRequest(ctx)
 		r.Writer.WriteHeader(http.StatusNotFound)
 		return errors.New("error")
 	}))
@@ -58,7 +58,7 @@ func TestResponseStatsFilter(t *testing.T) {
 func BenchmarkResponseStatsFilter(b *testing.B) {
 	r := statstest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://localhost:8080/foo", nil)
-	ctx := httpservice.WithHttpRequest(context.Background(), NoopResponseWriter{}, req)
+	ctx := httpservice.WithServerRequest(context.Background(), NoopResponseWriter{}, req)
 	s := saola.Apply(saola.NoopService{}, httpservice.NewResponseStatsFilter(r))
 	for i := 0; i < b.N; i++ {
 		s.Do(ctx)

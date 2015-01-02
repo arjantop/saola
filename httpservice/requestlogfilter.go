@@ -24,7 +24,7 @@ func NewRequestLogFilter(f func(e LogEntry)) saola.Filter {
 		err := s.Do(ctx)
 
 		latency := time.Now().Sub(start)
-		req := GetHttpRequest(ctx)
+		req := GetServerRequest(ctx)
 		var statusCode int
 		if si, ok := req.Writer.(StatusCodeInterceptor); ok {
 			statusCode = si.StatusCode()

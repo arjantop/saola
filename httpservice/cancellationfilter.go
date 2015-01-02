@@ -9,7 +9,7 @@ import (
 
 func NewCancellationFilter() saola.Filter {
 	return saola.FuncFilter(func(ctx context.Context, s saola.Service) error {
-		req := GetHttpRequest(ctx)
+		req := GetServerRequest(ctx)
 		if w, ok := req.Writer.(http.CloseNotifier); ok {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()

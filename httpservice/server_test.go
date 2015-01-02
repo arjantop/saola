@@ -97,7 +97,7 @@ func TestServerEndpointService(t *testing.T) {
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
-	ctx := httpservice.WithHttpRequest(context.Background(), w, req)
+	ctx := httpservice.WithServerRequest(context.Background(), w, req)
 	endpoint.Do(ctx)
 
 	assert.Equal(t, http.StatusOK, w.Code)
