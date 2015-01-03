@@ -1,12 +1,14 @@
 package httpservice_test
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/arjantop/saola"
 	"github.com/arjantop/saola/httpservice"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -24,7 +26,7 @@ func NewServer() *httptest.Server {
 	}))
 }
 
-func TestClientDoRequestSuccess(t *testing.T) {
+func TestClientRequestSuccess(t *testing.T) {
 	ts := NewServer()
 	defer ts.Close()
 	c := httpservice.Client{
@@ -42,7 +44,7 @@ func TestClientDoRequestSuccess(t *testing.T) {
 	assert.Equal(t, "bar", string(content))
 }
 
-func TestClientDoRequestFailure(t *testing.T) {
+func TestClientRequestFailure(t *testing.T) {
 	c := httpservice.Client{
 		Transport: &http.Transport{},
 	}
@@ -51,6 +53,48 @@ func TestClientDoRequestFailure(t *testing.T) {
 	res, err := c.Do(context.Background(), req)
 	assert.Error(t, err)
 	assert.Nil(t, res)
+}
+
+func TestClientWithFilterBefore(t *testing.T) {
+	ts := NewServer()
+	defer ts.Close()
+	c := httpservice.Client{
+		Transport: &http.Transport{},
+		Filter: saola.FuncFilter(func(ctx context.Context, s saola.Service) error {
+			cr := httpservice.GetClientRequest(ctx)
+			cr.Request.URL.Path = ""
+			return s.Do(ctx)
+		}),
+	}
+	req, err := http.NewRequest("GET", ts.URL+"/foo", nil)
+	assert.NoError(t, err)
+	res, err := c.Do(context.Background(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func TestClientWithFilterAfter(t *testing.T) {
+	ts := NewServer()
+	defer ts.Close()
+	c := httpservice.Client{
+		Transport: &http.Transport{},
+		Filter: saola.FuncFilter(func(ctx context.Context, s saola.Service) error {
+			cr := httpservice.GetClientRequest(ctx)
+			err := s.Do(ctx)
+			cr.Response.Body.Close()
+			cr.Response.Body = ioutil.NopCloser(bytes.NewBufferString("yay"))
+			return err
+		}),
+	}
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	assert.NoError(t, err)
+	res, err := c.Do(context.Background(), req)
+	assert.NoError(t, err)
+
+	content, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, "yay", string(content))
 }
 
 func TestClientDoContextTimeout(t *testing.T) {
