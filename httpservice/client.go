@@ -56,9 +56,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 }
 
 func newClientService(tr CancellableRoundTripper) saola.Service {
+	client := http.Client{Transport: tr}
 	return saola.FuncService(func(ctx context.Context) error {
 		cr := GetClientRequest(ctx)
-		client := http.Client{Transport: tr}
 		r := make(chan result, 1)
 		go func() {
 			resp, err := client.Do(cr.Request)
